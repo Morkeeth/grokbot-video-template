@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+demo-out/
+*.mp4
+*.aiff
+*.wav
