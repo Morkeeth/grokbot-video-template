@@ -53,7 +53,7 @@ class Schema(unittest.TestCase):
         self.assertFalse(r['ok'])
 
 
-@unittest.skipUnless(os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir(), 'needs Hermes Studio')
+@unittest.skipUnless(os.environ.get('STUDIO_PATH') or os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir(), 'needs the Video Studio engine')
 class RoundTrip(unittest.TestCase):
     """One full round trip on a tiny generated clip: propose, preview, revise, finish."""
 

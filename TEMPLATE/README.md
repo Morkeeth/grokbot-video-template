@@ -8,6 +8,6 @@ So these files are paste-in source text, one per part the guide names.
 |---|---|---|
 | Instructions | `instructions.md` | plain text; assumed to paste as the bot's instructions |
 | Memories | `memories.md` | one line per memory; assumed |
-| Skills | `skills/video-studio/SKILL.md` | the `name`/`description` frontmatter is assumed (Hermes and Claude skill convention), not from the guide |
+| Skills | `skills/video-studio/SKILL.md` | the `name`/`description` frontmatter is assumed (the common agent skill convention), not from the guide |
 | Routines | `routines/check-connector.md` | plain text; no schedule set, because the guide has no schedule keys |
 | Plugins | `plugins.md` | the Video Studio connector does not travel with a template; see `../MCP/SETUP.md` |

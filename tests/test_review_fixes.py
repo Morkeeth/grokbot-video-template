@@ -30,7 +30,7 @@ def recipe_of(project_id, version):
     return v, json.loads(Path(v['recipe']).read_text())
 
 
-@unittest.skipUnless(os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir(), 'needs Hermes Studio')
+@unittest.skipUnless(os.environ.get('STUDIO_PATH') or os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir(), 'needs the Video Studio engine')
 class ReviewFixes(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -112,12 +112,13 @@ class Readiness(unittest.TestCase):
         return asyncio.run(go())
 
     def test_p2_missing_studio_is_not_ready(self):
-        results = self.check_all({'HERMES_STUDIO_PATH': '/nonexistent/hermes-studio'})
+        results = self.check_all({'STUDIO_PATH': '/nonexistent/studio-engine'})
         for r in results:
             self.assertIs(r.get('ready'), False, r)
-            self.assertTrue(any('Hermes Studio' in x for x in r['missing']), r)
+            self.assertTrue(any(x.startswith('Video Studio engine:') for x in r['missing']), r)
+            self.assertNotIn('hermes', json.dumps(r).replace('/hermes-studio', '').lower(), r)
 
-    @unittest.skipUnless(os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir(), 'needs Hermes Studio')
+    @unittest.skipUnless(os.environ.get('STUDIO_PATH') or os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir(), 'needs the Video Studio engine')
     def test_p2_ready_when_environment_works_and_renders_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
             results = self.check_all({'STUDIO_WORKDIR': tmp})

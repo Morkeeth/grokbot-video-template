@@ -5,13 +5,13 @@ A Grok Bot template carries instructions, memories, skills and routines. It does
 ## Needs
 - Python 3.10 or newer, `pip install "mcp>=1.29,<2" pillow` (mcp 2.x removed FastMCP, which the connector uses)
 - ffmpeg and ffprobe on PATH
-- A Hermes Studio checkout. Tested at commit `dc4a981` (main on 12 Nov 2026; 16 tests and the demo pass) of `github.com/Morkeeth/hermes-studio`. Set `HERMES_STUDIO_PATH` to it.
+- The Video Studio engine: a clone of `github.com/Morkeeth/hermes-studio`. Tested at commit `dc4a981` (main on 12 Nov 2026; 16 tests and the demo pass). Set `STUDIO_PATH` to it. The older name `HERMES_STUDIO_PATH` still works; `STUDIO_PATH` wins when both are set.
 - Optional: macOS `say` or `espeak` for the demo voice.
 - Optional: whisper.cpp (`whisper-cli` on PATH) and a local model for real transcripts. Set `STUDIO_WHISPER_MODEL=/path/to/ggml-model.bin`, or pass `model` to `propose_treatments`. The clip is transcribed once at intake; every later version reuses those words. Without a model, pass the spoken words as `script`. The connector never downloads a model.
 
 ## Run it locally (stdio)
 ```sh
-export HERMES_STUDIO_PATH=/path/to/hermes-studio
+export STUDIO_PATH=/path/to/hermes-studio   # the Video Studio engine clone
 export STUDIO_WORKDIR=~/GrokbotStudio      # where projects and versions are written
 python3 MCP/studio_mcp.py                   # speaks MCP over stdio
 ```

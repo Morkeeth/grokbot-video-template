@@ -13,4 +13,4 @@ Steps:
 2. If a tool is missing, a call fails, or any result has `ready: false`, say "Video Studio needs setup", list the `missing` items, and link SETUP.md.
 3. Only if all four return `ready: true`, say "Video Studio is ready to render".
 
-A check renders nothing, uploads nothing and spends nothing. It checks Hermes Studio, ffmpeg, ffprobe and the work folder. It does not prove the look of a render.
+A check renders nothing, uploads nothing and spends nothing. It checks the Video Studio engine, ffmpeg, ffprobe and the work folder. It does not prove the look of a render.

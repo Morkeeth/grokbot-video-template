@@ -1,11 +1,11 @@
 """First five minutes: a generated sample clip, three treatments, a pick, one revision, an MP4 out.
 
 No keys, no network, no paid call, no private footage. The sample is a colour test pattern with the
-machine's own text-to-speech voice, built by Hermes Studio's connectors.demo.sample. The voice
-and captions say this template's line, not Hermes Studio's own. Every tool call goes
+machine's own text-to-speech voice, built by the Video Studio engine's connectors.demo.sample. The voice
+and captions say this template's line, not the engine's own. Every tool call goes
 through the MCP server over stdio, the same way Grok Bot or any MCP host would call it.
 
-    HERMES_STUDIO_PATH=/path/to/hermes-studio python3 demo/run_demo.py OUT_DIR
+    STUDIO_PATH=/path/to/hermes-studio python3 demo/run_demo.py OUT_DIR
 """
 import asyncio
 import json
@@ -29,8 +29,8 @@ async def main(out):
         raise SystemExit(f'{out} is not empty; pick a new folder (runs never overwrite)')
     out.mkdir(parents=True, exist_ok=True)
     studio_mcp.studio()
-    from connectors import demo  # Hermes Studio, read-only
-    demo.LINE = LINE  # the sample voice reads this module global at call time; Hermes Studio files are unchanged
+    from connectors import demo  # the Video Studio engine, read-only
+    demo.LINE = LINE  # the sample voice reads this module global at call time; engine files are unchanged
     clip, voiced = demo.sample(out / 'input')
     env = {'STUDIO_WORKDIR': str(out / 'studio')}
     log, t0 = [], time.time()

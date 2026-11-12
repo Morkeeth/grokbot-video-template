@@ -20,7 +20,7 @@ sys.dont_write_bytecode = True
 import studio_mcp as m  # noqa: E402
 from client import session  # noqa: E402
 
-HAVE_STUDIO = bool(os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir())
+HAVE_STUDIO = bool(os.environ.get('STUDIO_PATH') or os.environ.get('HERMES_STUDIO_PATH') or (Path.home() / 'CODE/hermes-studio-connect').is_dir())
 
 
 def tiny_clip(path, audio=True):
@@ -65,7 +65,7 @@ class HandoffRecipe(Base):
         self.assertEqual(handed.get('start_at'), 1.0)
 
 
-@unittest.skipUnless(HAVE_STUDIO, 'needs Hermes Studio')
+@unittest.skipUnless(HAVE_STUDIO, 'needs the Video Studio engine')
 class SpeechModel(Base):
     def test_schema_accepts_model(self):
         async def go():
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     unittest.main()
 
 
-@unittest.skipUnless(HAVE_STUDIO, 'needs Hermes Studio')
+@unittest.skipUnless(HAVE_STUDIO, 'needs the Video Studio engine')
 class PresetParity(Base):
     """A picked preset must render with the same caption look as the treatment the creator saw (no inherited highlight)."""
 

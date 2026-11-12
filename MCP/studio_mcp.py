@@ -1,7 +1,8 @@
-"""Video Studio MCP server for Grok Bot: four tools over Hermes Studio.
+"""Video Studio MCP server for Grok Bot: four tools over the Video Studio engine.
 
 Tools: propose_treatments, render_preview, revise, finish.
-Hermes Studio is imported read-only from HERMES_STUDIO_PATH. Nothing is installed,
+The Video Studio engine (the public repo github.com/Morkeeth/hermes-studio) is imported read-only
+from STUDIO_PATH (HERMES_STUDIO_PATH still works as a fallback). Nothing is installed,
 downloaded, uploaded, published or paid for. Every render goes to a new version folder,
 so earlier versions are never overwritten.
 """
@@ -30,12 +31,43 @@ NOT_SUPPORTED_WORDS = {
     'generate': 'generated shots (paid; needs a quote and the owner\'s explicit yes)',
     'upload': 'uploading or posting', 'post': 'uploading or posting', 'publish': 'uploading or posting',
 }
+# The engine's own style ids and labels carry its repo name. Creators see these public ones instead.
+PUBLIC_STYLE = {'hermes-dither': 'dither'}
+ENGINE_STYLE = {v: k for k, v in PUBLIC_STYLE.items()}
+PUBLIC_LABEL = {'hermes-dither': 'Dither'}
+FALLBACK_TITLE = 'VIDEO STUDIO'  # the engine's own fallback title names its repo; a clip with no words gets this
+
+
+def engine_style(name):
+    """Public or engine style id in, engine style id out. Unknown names are refused in public terms."""
+    n = str(name).strip()
+    n = ENGINE_STYLE.get(n, n)
+    return n
+
+
+def public_style(name):
+    return PUBLIC_STYLE.get(name, name)
+
+
+def style_names(s):
+    return sorted(public_style(n) for n in s.STYLES)
+
+
+def style_label(s, name):
+    return PUBLIC_LABEL.get(name) or s.get(name)['label']
+
+
+def check_style(s, name):
+    n = engine_style(name)
+    if n not in s.STYLES:
+        raise ValueError(f'Unknown style {name}; choose from {style_names(s)}')
+    return n
 
 
 def studio_path():
-    p = Path(os.environ.get('HERMES_STUDIO_PATH') or DEFAULT_STUDIO).expanduser().resolve()
+    p = Path(os.environ.get('STUDIO_PATH') or os.environ.get('HERMES_STUDIO_PATH') or DEFAULT_STUDIO).expanduser().resolve()
     if not (p / 'connectors' / 'finish.py').is_file():
-        raise RuntimeError(f'Hermes Studio not found at {p}; set HERMES_STUDIO_PATH to a hermes-studio checkout')
+        raise RuntimeError(f'Video Studio engine not found at {p}; set STUDIO_PATH to a clone of github.com/Morkeeth/hermes-studio')
     return p
 
 
@@ -141,10 +173,10 @@ def _version(d, project, kind, result, note, style_name, effective_style, window
 def _preset(s, name):
     """A preset as a full dict that renders the same as the preset name.
 
-    Studio merges a style dict over hermes-dither, so keys a preset leaves out (its caption highlight)
+    The engine merges a style dict over its dither style, so keys a preset leaves out (its caption highlight)
     would be inherited. Pin them off explicitly.
     """
-    st = dict(s.get(name))
+    st = dict(s.get(check_style(s, name)))
     st.setdefault('highlight', None)
     return st
 
@@ -153,9 +185,9 @@ def readiness(tool):
     """Read-only: can this connector render right now? Never renders, installs or spends."""
     checks, missing = {}, []
     try:
-        studio(); checks['hermes_studio'] = str(studio_path())
+        studio(); checks['studio_engine'] = str(studio_path())
     except Exception as exc:
-        checks['hermes_studio'] = False; missing.append(f'Hermes Studio: {exc}')
+        checks['studio_engine'] = False; missing.append(f'Video Studio engine: {exc}')
     for exe in ('ffmpeg', 'ffprobe'):
         checks[exe] = bool(shutil.which(exe))
         if not checks[exe]:
@@ -197,11 +229,10 @@ def propose_treatments(source, title='', script='', seconds=6.0, styles=None, mo
     src = Path(source).expanduser().resolve(strict=True)
     if not src.is_file():
         raise ValueError('source must be a local video file')
-    styles = list(styles or ['clean-short', 'brain-rot', 'hermes-dither'])
+    styles = list(styles or ['clean-short', 'brain-rot', 'dither'])
     if not 2 <= len(styles) <= 3:
         raise ValueError('Ask for two or three treatments')
-    for name in styles:
-        s.get(name)
+    styles = [check_style(s, name) for name in styles]
     seconds = float(seconds)
     if not 2 <= seconds <= 30:
         raise ValueError('seconds must be between 2 and 30')
@@ -227,15 +258,22 @@ def propose_treatments(source, title='', script='', seconds=6.0, styles=None, mo
         with tempfile.TemporaryDirectory() as tmp:
             words = f.transcribe_words(frozen, mdl, tmp)  # once, at intake; every later version reuses these words
         words_from = f'local whisper.cpp ({mdl.name})'
-    alt = f.alternatives(frozen, d / 'treatments', title=title, words=words, styles=tuple(styles), seconds=seconds)
+    alt = f.alternatives(frozen, d / 'treatments', title=title or (None if words else FALLBACK_TITLE) or '',
+                         words=words, styles=tuple(styles), seconds=seconds)
+    for o in alt['options']:
+        o['label'] = style_label(s, o['style'])
+    note = alt.get('editor_note')
+    if isinstance(note, dict) and note.get('pick'):
+        note = {**note, 'pick': public_style(note['pick'])}
+    question = 'Pick a style: ' + ', '.join(f"{o['option']} {o['label']}" for o in alt['options'])
     project = {'id': pid, 'source': str(frozen), 'source_original': str(src), 'source_sha256': src_sha,
                'title': alt.get('title') or title, 'words': words, 'words_from': words_from, 'treatments': alt['options'],
-               'editor_note': alt.get('editor_note'), 'versions': [], 'created_at': time.strftime('%Y-%m-%dT%H:%M:%S%z')}
+               'editor_note': note, 'versions': [], 'created_at': time.strftime('%Y-%m-%dT%H:%M:%S%z')}
     _save(d, project)
-    return {'ok': True, 'project_id': pid, 'question': alt['question'],
-            'treatments': [{'option': o['option'], 'style': o['style'], 'label': o['label'], 'preview': o['preview']}
+    return {'ok': True, 'project_id': pid, 'question': question,
+            'treatments': [{'option': o['option'], 'style': public_style(o['style']), 'label': o['label'], 'preview': o['preview']}
                            for o in alt['options']],
-            'editor_note': alt.get('editor_note'), 'words_from': words_from,
+            'editor_note': note, 'words_from': words_from,
             'next': 'Show the previews. Ask the creator to pick a letter, then call render_preview.'}
 
 
@@ -245,15 +283,15 @@ def render_preview(project_id, option, seconds=None):
     with _locked(project_id) as (d, project):
         src = _source(project)
         letters = {t['option']: t['style'] for t in project['treatments']}
-        style = letters.get(str(option).strip().upper(), str(option).strip())
+        style = check_style(s, letters.get(str(option).strip().upper(), str(option).strip()))
         st = _preset(s, style)
         if seconds is not None and float(seconds) <= 0:
             raise ValueError('seconds must be positive')
         window = {'start': 0.0, 'end': float(seconds) if seconds else None}
         out = _version_dir(d, len(project['versions']) + 1)
-        r = f.finish(src, out, title=project.get('title', ''), words=project.get('words'), style=st,
-                     max_seconds=window['end'])
-        v = _version(d, project, 'preview', r, f'picked {option} ({style})', style, st, window)
+        r = f.finish(src, out, title=project.get('title') or ('' if project.get('words') else FALLBACK_TITLE),
+                     words=project.get('words'), style=st, max_seconds=window['end'])
+        v = _version(d, project, 'preview', r, f'picked {option} ({public_style(style)})', style, st, window)
     return {'ok': True, 'project_id': project_id, 'version': v['version'], 'preview': v['output'], 'sha256': v['sha256'],
             'probe': v['probe'], 'window': window, 'next': 'Show the preview. Ask what should change, then call revise.'}
 
@@ -276,21 +314,22 @@ def revise(project_id, edit, request=''):
 
         def pick(v):
             v = str(v).strip()
-            return letters.get(v.upper(), v) if len(v) == 1 else v
+            return check_style(s, letters.get(v.upper(), v) if len(v) == 1 else v)
 
         understood, changed, could_not = [], [], []
         if 'style' in edit:
             base = pick(edit['style'])
             st = _preset(s, base)
-            understood.append(f'switch to {base}'); changed.append(f'style {base}')
+            understood.append(f'switch to {public_style(base)}'); changed.append(f'style {public_style(base)}')
         else:
             # Keep everything the creator already chose (including mixed captions); change only what was asked.
             base = parent['style']
             st = dict(parent.get('effective_style') or _preset(s, base))
         if 'captions_from' in edit:
-            cap = s.get(pick(edit['captions_from']))
+            cap_name = pick(edit['captions_from'])
+            cap = s.get(cap_name)
             st.update({k: cap[k] for k in ('box', 'text', 'size', 'words', 'y')})
-            understood.append(f"captions in the {pick(edit['captions_from'])} look"); changed.append(f"captions from {pick(edit['captions_from'])}")
+            understood.append(f"captions in the {public_style(cap_name)} look"); changed.append(f"captions from {public_style(cap_name)}")
         window = dict(parent.get('window') or {'start': float(recipe.get('start_at') or 0), 'end': None})
         if edit.get('trim_start'):
             t = float(edit['trim_start'])
@@ -308,7 +347,7 @@ def revise(project_id, edit, request=''):
         if edit.get('punchier'):
             intro = max(0.6, intro - 0.6)
             understood.append('punchier intro'); changed.append(f'intro shortened to {intro:.1f} s')
-        title = str(edit.get('title') or recipe.get('title') or '')
+        title = str(edit.get('title') or recipe.get('title') or ('' if project.get('words') else FALLBACK_TITLE))
         if edit.get('title'):
             understood.append(f'new title "{title}"'); changed.append('new title')
         music = recipe.get('music')
@@ -404,7 +443,7 @@ def build_server():
             return {'ok': False, 'error': f'{type(exc).__name__}: {exc}'}
 
     @mcp.tool(name='propose_treatments', description='Start a project from a local video file and render its opening in 2-3 visibly different styles '
-              '(default A clean short, B brain rot, C dither). Returns a question and one preview per option. '
+              '(default A clean short, B brain rot, C dither; also mono-kinetic). Returns a question and one preview per option. '
               'Captions need words: pass `script` (the spoken words), or `model` (a local whisper.cpp model path; or set STUDIO_WHISPER_MODEL) to transcribe once at intake. Local only, no spend.')
     def _propose(source: str, title: str = '', script: str = '', seconds: float = 6.0, styles: Optional[List[str]] = None, model: Optional[str] = None, check_only: bool = False) -> dict:
         return readiness('propose_treatments') if check_only else wrap(propose_treatments, source, title, script, seconds, styles, model)
