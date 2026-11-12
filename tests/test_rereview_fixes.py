@@ -137,5 +137,5 @@ class PresetParity(Base):
                 m.render_preview(pid, name)
                 m.revise(pid, {'style': name})
         for passed in styles_seen:
-            name = next(n for n in s.STYLES if all(passed.get(k) == v for k, v in s.STYLES[n].items()))
+            name = next(n for n in s.STYLES if all(passed.get(k) == v for k, v in s.STYLES[n].items() if k != 'label'))  # label is display text; the connector sets a public one
             self.assertEqual(s.get(passed).get('highlight'), s.get(name).get('highlight'), name)
