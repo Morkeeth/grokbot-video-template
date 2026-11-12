@@ -57,6 +57,11 @@ def style_label(s, name):
     return PUBLIC_LABEL.get(name) or s.get(name)['label']
 
 
+def resolve_title(f, title, words):
+    """The title the engine would burn in, minus its own fallback, which names its repo."""
+    return title or (f.hook_title(words) if words else '') or FALLBACK_TITLE
+
+
 def check_style(s, name):
     n = engine_style(name)
     if n not in s.STYLES:
@@ -176,8 +181,10 @@ def _preset(s, name):
     The engine merges a style dict over its dither style, so keys a preset leaves out (its caption highlight)
     would be inherited. Pin them off explicitly.
     """
-    st = dict(s.get(check_style(s, name)))
+    n = check_style(s, name)
+    st = dict(s.get(n))
     st.setdefault('highlight', None)
+    st['label'] = style_label(s, n)  # the engine writes this dict into recipe.json, which the creator gets
     return st
 
 
@@ -258,7 +265,7 @@ def propose_treatments(source, title='', script='', seconds=6.0, styles=None, mo
         with tempfile.TemporaryDirectory() as tmp:
             words = f.transcribe_words(frozen, mdl, tmp)  # once, at intake; every later version reuses these words
         words_from = f'local whisper.cpp ({mdl.name})'
-    alt = f.alternatives(frozen, d / 'treatments', title=title or (None if words else FALLBACK_TITLE) or '',
+    alt = f.alternatives(frozen, d / 'treatments', title=resolve_title(f, title, words),
                          words=words, styles=tuple(styles), seconds=seconds)
     for o in alt['options']:
         o['label'] = style_label(s, o['style'])
@@ -289,7 +296,7 @@ def render_preview(project_id, option, seconds=None):
             raise ValueError('seconds must be positive')
         window = {'start': 0.0, 'end': float(seconds) if seconds else None}
         out = _version_dir(d, len(project['versions']) + 1)
-        r = f.finish(src, out, title=project.get('title') or ('' if project.get('words') else FALLBACK_TITLE),
+        r = f.finish(src, out, title=resolve_title(f, project.get('title'), project.get('words')),
                      words=project.get('words'), style=st, max_seconds=window['end'])
         v = _version(d, project, 'preview', r, f'picked {option} ({public_style(style)})', style, st, window)
     return {'ok': True, 'project_id': project_id, 'version': v['version'], 'preview': v['output'], 'sha256': v['sha256'],
@@ -347,7 +354,7 @@ def revise(project_id, edit, request=''):
         if edit.get('punchier'):
             intro = max(0.6, intro - 0.6)
             understood.append('punchier intro'); changed.append(f'intro shortened to {intro:.1f} s')
-        title = str(edit.get('title') or recipe.get('title') or ('' if project.get('words') else FALLBACK_TITLE))
+        title = resolve_title(f, str(edit.get('title') or recipe.get('title') or ''), project.get('words'))
         if edit.get('title'):
             understood.append(f'new title "{title}"'); changed.append('new title')
         music = recipe.get('music')

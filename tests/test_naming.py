@@ -81,7 +81,21 @@ class PublicNames(unittest.TestCase):
                     proj = json.loads((tmp / 'studio' / r['project_id'] / 'project.json').read_text())
                     recipe = json.loads(Path(proj['versions'][-1]['recipe']).read_text())
                     self.assertEqual(recipe['title'], m.FALLBACK_TITLE)
+                    f = await call(s, 'finish', {'project_id': r['project_id']})
+                    self.assertTrue(f['ok'], f)
+                    for fp in Path(f['folder']).iterdir():  # everything handed to the creator
+                        if fp.suffix != '.mp4':
+                            self.assertNotIn('hermes', creator_text(json.loads(fp.read_text()) if fp.suffix == '.json' else fp.read_text()), fp)
             asyncio.run(go())
+
+
+@unittest.skipUnless(HAVE_STUDIO, 'needs the Video Studio engine')
+class FillerTitle(unittest.TestCase):
+    def test_filler_only_words_get_neutral_title(self):
+        f, _ = m.studio()
+        self.assertEqual(f.hook_title([{'text': 'Um.', 'start': 0, 'end': 1}]), '')  # the engine would fall back to its own name
+        self.assertEqual(m.resolve_title(f, '', [{'text': 'Um.', 'start': 0, 'end': 1}]), m.FALLBACK_TITLE)
+        self.assertEqual(m.resolve_title(f, 'Mine', []), 'Mine')
 
 
 if __name__ == '__main__':
