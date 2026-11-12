@@ -1,7 +1,8 @@
 """First five minutes: a generated sample clip, three treatments, a pick, one revision, an MP4 out.
 
 No keys, no network, no paid call, no private footage. The sample is a colour test pattern with the
-machine's own text-to-speech voice (Hermes Studio's connectors.demo.sample). Every tool call goes
+machine's own text-to-speech voice, built by Hermes Studio's connectors.demo.sample. The voice
+and captions say this template's line, not Hermes Studio's own. Every tool call goes
 through the MCP server over stdio, the same way Grok Bot or any MCP host would call it.
 
     HERMES_STUDIO_PATH=/path/to/hermes-studio python3 demo/run_demo.py OUT_DIR
@@ -19,6 +20,8 @@ sys.dont_write_bytecode = True
 import studio_mcp  # noqa: E402
 from client import session, call  # noqa: E402
 
+LINE = 'Welcome to the Grok Bot Video Studio. Send raw footage, pick a style, and get a finished short back.'
+
 
 async def main(out):
     out = Path(out).expanduser().resolve()
@@ -27,13 +30,14 @@ async def main(out):
     out.mkdir(parents=True, exist_ok=True)
     studio_mcp.studio()
     from connectors import demo  # Hermes Studio, read-only
+    demo.LINE = LINE  # the sample voice reads this module global at call time; Hermes Studio files are unchanged
     clip, voiced = demo.sample(out / 'input')
     env = {'STUDIO_WORKDIR': str(out / 'studio')}
     log, t0 = [], time.time()
     async with session(env) as s:
         tools = sorted(t.name for t in (await s.list_tools()).tools)
         log.append({'step': 'list_tools', 'tools': tools})
-        r = await call(s, 'propose_treatments', {'source': str(clip), 'script': demo.LINE, 'seconds': 5})
+        r = await call(s, 'propose_treatments', {'source': str(clip), 'script': LINE, 'seconds': 5})
         assert r.get('ok'), r
         log.append({'step': 'propose_treatments', 'question': r['question'], 'previews': [t['preview'] for t in r['treatments']]})
         pid = r['project_id']

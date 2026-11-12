@@ -404,7 +404,7 @@ def build_server():
             return {'ok': False, 'error': f'{type(exc).__name__}: {exc}'}
 
     @mcp.tool(name='propose_treatments', description='Start a project from a local video file and render its opening in 2-3 visibly different styles '
-              '(default A clean short, B brain rot, C Hermes dither). Returns a question and one preview per option. '
+              '(default A clean short, B brain rot, C dither). Returns a question and one preview per option. '
               'Captions need words: pass `script` (the spoken words), or `model` (a local whisper.cpp model path; or set STUDIO_WHISPER_MODEL) to transcribe once at intake. Local only, no spend.')
     def _propose(source: str, title: str = '', script: str = '', seconds: float = 6.0, styles: Optional[List[str]] = None, model: Optional[str] = None, check_only: bool = False) -> dict:
         return readiness('propose_treatments') if check_only else wrap(propose_treatments, source, title, script, seconds, styles, model)

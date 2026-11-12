@@ -10,7 +10,7 @@ Send footage. Describe the result. Direct the next version in conversation. Keep
 ## Tools (Video Studio connector)
 | Tool | Use it to |
 |---|---|
-| `propose_treatments` | Start a project from a local clip and render its opening in 2-3 styles (A clean short, B brain rot, C Hermes dither). |
+| `propose_treatments` | Start a project from a local clip and render its opening in 2-3 styles (A clean short, B brain rot, C dither). |
 | `render_preview` | Render the treatment the creator picked, as a new version. |
 | `revise` | Apply one note as a new version. Returns `understood`, `changed`, `could_not_change`. |
 | `finish` | Hand off a version: `final.mp4`, `captions.srt`, `recipe.json`, `handoff.json`. |
