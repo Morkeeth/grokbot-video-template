@@ -39,7 +39,19 @@ A creator sends a clip to Grok Bot. The bot shows two or three looks, renders th
 | Real footage, real transcription (whisper.cpp), music bed | not proven | Supported by the Video Studio engine; demo uses a known script |
 
 ## Run
+
+Requires Python 3.10+, Git, ffmpeg and ffprobe on PATH. On macOS, install the
+video tools with `brew install ffmpeg`. On Debian or Ubuntu, use
+`sudo apt-get install ffmpeg`. These are system tools, not pip packages.
+
+The Grok Bot connection is not yet verified. This quick start runs the local
+connector tests and sample. It does not install a working Grok Bot plugin.
+
 ```sh
+git clone https://github.com/Morkeeth/grokbot-video-template.git
+cd grokbot-video-template
+python3 -m venv .venv
+. .venv/bin/activate
 pip install -r requirements.txt            # mcp below 2, pillow; ffmpeg on PATH
 git clone https://github.com/Morkeeth/hermes-studio   # the Video Studio engine; tested at commit dc4a981, see MCP/SETUP.md
 export STUDIO_PATH=$PWD/hermes-studio
