@@ -22,6 +22,18 @@ Today this runs on your own machine, as a tool that a coding agent (or you) can 
 | `revise` | Turns one note into a new version. Returns `understood`, `changed`, `could_not_change`. |
 | `finish` | Copies a version to a handoff folder with captions, recipe and checks. Never publishes. |
 
+## Change the look
+
+There are four built-in looks: `clean-short`, `brain-rot`, `dither` and `mono-kinetic`. Tell your agent what you want, and it calls `revise`. Each change is a new version, and the old one stays.
+
+| You say | The agent sends as `edit` | What changes |
+|---|---|---|
+| "use the clean look" | `{"style": "clean-short"}` | The whole look |
+| "keep this, but captions like brain rot" | `{"captions_from": "brain-rot"}` | Caption colour, box, size, position and words per caption |
+| "compare mono kinetic and dither" | call `propose_treatments` with `"styles": ["mono-kinetic", "dither"]` | Shows both on your clip |
+
+You cannot set your own colours, font or caption size yet. A note that asks for a colour grade comes back under `could_not_change`.
+
 ## What works and what does not (20 Nov 2026)
 | Item | State | How to check |
 |---|---|---|
