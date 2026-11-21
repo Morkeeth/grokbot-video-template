@@ -30,7 +30,7 @@ There are seven built-in looks: `clean-short`, `brain-rot`, `dither`, `mono-kine
 |---|---|---|
 | "use the clean look" | `{"style": "clean-short"}` | The whole look |
 | "use the quiet look" | `{"style": "quiet"}` | The whole look |
-| "keep this, but captions like brain rot" | `{"captions_from": "brain-rot"}` | Caption colour, box, size, position and words per caption |
+| "keep this, but captions like brain rot" | `{"captions_from": "brain-rot"}` | Caption colour, box, word highlight, size, position and words per caption |
 | "orange captions, no box, mid-screen" | `{"look": {"text": "#ff5a1f", "box": null, "y": 0.5}}` | Only the caption settings you name |
 | "compare mono kinetic and dither" | call `propose_treatments` with `"styles": ["mono-kinetic", "dither"]` | Shows both on your clip |
 

@@ -418,6 +418,10 @@ def revise(project_id, edit, request=''):
             cap_name = pick(edit['captions_from'])
             cap = s.get(cap_name)
             st.update({k: cap[k] for k in ('box', 'text', 'size', 'words', 'y')})
+            st['highlight'] = cap.get('highlight')  # the spoken-word mark is part of the caption look
+            st.pop('highlight_text', None)
+            if cap.get('highlight_text') is not None:
+                st['highlight_text'] = cap['highlight_text']
             understood.append(f"captions in the {public_style(cap_name)} look"); changed.append(f"captions from {public_style(cap_name)}")
         if 'look' in edit:
             u, c = apply_look(st, edit['look'])
