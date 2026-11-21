@@ -23,7 +23,8 @@ from pathlib import Path
 sys.dont_write_bytecode = True  # never write caches into the Studio checkout
 
 DEFAULT_STUDIO = Path.home() / 'CODE' / 'hermes-studio-connect'
-REVISE_FIELDS = ('style', 'captions_from', 'trim_start', 'punchier', 'title', 'quieter_music')
+REVISE_FIELDS = ('style', 'captions_from', 'look', 'trim_start', 'punchier', 'title', 'quieter_music')
+LOOK_KEYS = ('text', 'box', 'size', 'words', 'y')
 NOT_SUPPORTED_WORDS = {
     'colour': 'colour grading', 'color': 'colour grading', 'grade': 'colour grading',
     'b-roll': 'new B-roll from a description', 'broll': 'new B-roll from a description',
@@ -67,6 +68,67 @@ def check_style(s, name):
     if n not in s.STYLES:
         raise ValueError(f'Unknown style {name}; choose from {style_names(s)}')
     return n
+
+
+def _hex_rgb(value, field):
+    """Hex '#rrggbb' to an RGB tuple. box may be null for no caption box."""
+    if field == 'box' and value is None:
+        return None
+    if not isinstance(value, str) or not re.fullmatch(r'#[0-9A-Fa-f]{6}', value):
+        if field == 'box':
+            raise ValueError('box must be a hex colour like #rrggbb, or null for no box')
+        raise ValueError(f'{field} must be a hex colour like #rrggbb')
+    h = value[1:]
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def apply_look(st, look):
+    """Overlay a creator caption look onto the effective style. Raises ValueError; does not render."""
+    if not isinstance(look, dict):
+        raise ValueError('look must be a dict of caption settings')
+    unknown = set(look) - set(LOOK_KEYS)
+    if unknown:
+        raise ValueError('Unknown look keys ' + ', '.join(sorted(unknown)) + '; use text, box, size, words, y')
+    if not look:
+        raise ValueError('look must name at least one of: text, box, size, words, y')
+    understood, changed = [], []
+    colour_touched = False
+    if 'text' in look:
+        st['text'] = _hex_rgb(look['text'], 'text')
+        understood.append(f"caption text {look['text']}")
+        changed.append(f"caption text {look['text']}")
+        colour_touched = True
+    if 'box' in look:
+        st['box'] = _hex_rgb(look['box'], 'box')
+        box_msg = 'caption box none' if look['box'] is None else f"caption box {look['box']}"
+        understood.append(box_msg)
+        changed.append(box_msg)
+        colour_touched = True
+    if colour_touched:
+        st['highlight'] = None
+        st.pop('highlight_text', None)
+    if 'size' in look:
+        size = look['size']
+        if type(size) is not int or not 40 <= size <= 220:
+            raise ValueError('size must be an integer from 40 to 220')
+        st['size'] = size
+        understood.append(f'caption size {size}')
+        changed.append(f'caption size {size}')
+    if 'words' in look:
+        words = look['words']
+        if type(words) is not int or not 1 <= words <= 6:
+            raise ValueError('words must be an integer from 1 to 6')
+        st['words'] = words
+        understood.append(f'caption words {words}')
+        changed.append(f'caption words {words}')
+    if 'y' in look:
+        y = look['y']
+        if isinstance(y, bool) or not isinstance(y, (int, float)) or not 0.1 <= float(y) <= 0.9:
+            raise ValueError('y must be a number from 0.1 to 0.9')
+        st['y'] = float(y)
+        understood.append(f'caption y {st["y"]}')
+        changed.append(f'caption y {st["y"]}')
+    return understood, changed
 
 
 def studio_path():
@@ -337,6 +399,9 @@ def revise(project_id, edit, request=''):
             cap = s.get(cap_name)
             st.update({k: cap[k] for k in ('box', 'text', 'size', 'words', 'y')})
             understood.append(f"captions in the {public_style(cap_name)} look"); changed.append(f"captions from {public_style(cap_name)}")
+        if 'look' in edit:
+            u, c = apply_look(st, edit['look'])
+            understood.extend(u); changed.extend(c)
         window = dict(parent.get('window') or {'start': float(recipe.get('start_at') or 0), 'end': None})
         if edit.get('trim_start'):
             t = float(edit['trim_start'])
@@ -366,7 +431,11 @@ def revise(project_id, edit, request=''):
             else:
                 could_not.append('quieter music: this version has no separate music bed; the voice track was left as is')
         low = str(request).lower()
+        # A note about caption colour was just applied, so "colour" alone must not report a grade as refused.
+        look_colour = bool({'text', 'box'} & set(edit.get('look') or {}))
         for word, what in NOT_SUPPORTED_WORDS.items():
+            if look_colour and word in ('colour', 'color'):
+                continue
             if re.search(rf'\b{re.escape(word)}', low) and what not in could_not:
                 could_not.append(what)
         words = project.get('words') if project.get('words') is not None else recipe.get('words')
@@ -435,6 +504,7 @@ def build_server():
         model_config = {'extra': 'forbid'}
         style: Optional[str] = Field(None, description='Treatment letter (A/B/C) or style name')
         captions_from: Optional[str] = Field(None, description='Take the caption look from this letter or style')
+        look: Optional[dict] = Field(None, description='Custom caption look: text and box as #rrggbb (box null for none), size 40-220, words 1-6, y 0.1 (top) to 0.9 (bottom)')
         trim_start: Optional[float] = Field(None, ge=0, le=30, description='Seconds to cut from the opening')
         punchier: Optional[bool] = Field(None, description='Shorter, faster title intro')
         title: Optional[str] = Field(None, description='New title text')

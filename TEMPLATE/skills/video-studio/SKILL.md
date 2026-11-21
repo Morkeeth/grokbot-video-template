@@ -26,6 +26,7 @@ No other tools exist. Do not invent tool names.
    |---|---|
    | "use the clean look" / "go with A" | `style: "A"` |
    | "captions like B" | `captions_from: "B"` |
+   | "captions in #ff3300" / custom caption colours | `look: {"text": "#ff3300", ...}` |
    | "cut the first two seconds", "tighter intro" | `trim_start: 2` |
    | "punchier" | `punchier: true` |
    | "call it ..." | `title: "..."` |

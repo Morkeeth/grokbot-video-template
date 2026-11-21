@@ -30,9 +30,10 @@ There are four built-in looks: `clean-short`, `brain-rot`, `dither` and `mono-ki
 |---|---|---|
 | "use the clean look" | `{"style": "clean-short"}` | The whole look |
 | "keep this, but captions like brain rot" | `{"captions_from": "brain-rot"}` | Caption colour, box, size, position and words per caption |
+| "orange captions, no box, mid-screen" | `{"look": {"text": "#ff5a1f", "box": null, "y": 0.5}}` | Only the caption settings you name |
 | "compare mono kinetic and dither" | call `propose_treatments` with `"styles": ["mono-kinetic", "dither"]` | Shows both on your clip |
 
-You cannot set your own colours, font or caption size yet. A note that asks for a colour grade comes back under `could_not_change`.
+`look` takes `text` and `box` as `#rrggbb` (`box` can be `null`), `size` from 40 to 220, `words` per caption from 1 to 6, and `y` from 0.1 (top of the frame) to 0.9 (bottom). You cannot change the font yet. A note that asks for a colour grade comes back under `could_not_change`.
 
 ## What works and what does not (20 Nov 2026)
 | Item | State | How to check |
