@@ -37,6 +37,23 @@ PUBLIC_STYLE = {'hermes-dither': 'dither'}
 ENGINE_STYLE = {v: k for k, v in PUBLIC_STYLE.items()}
 PUBLIC_LABEL = {'hermes-dither': 'Dither'}
 FALLBACK_TITLE = 'VIDEO STUDIO'  # the engine's own fallback title names its repo; a clip with no words gets this
+TEMPLATE_LOOKS = {
+    'quiet': {
+        'label': 'Quiet', 'intro_dark': (10, 10, 12), 'intro_light': (58, 58, 64),
+        'box': None, 'text': (255, 255, 255), 'size': 84, 'words': 4, 'y': 0.80,
+        'highlight': None, 'music_db': -24,
+    },
+    'oxblood': {
+        'label': 'Oxblood', 'intro_dark': (30, 6, 8), 'intro_light': (122, 24, 28),
+        'box': None, 'text': (255, 190, 70), 'size': 156, 'words': 1, 'y': 0.74,
+        'highlight': None, 'music_db': -20,
+    },
+    'marker': {
+        'label': 'Marker', 'intro_dark': (0, 18, 92), 'intro_light': (0, 71, 255),
+        'box': None, 'text': (255, 255, 255), 'size': 100, 'words': 3, 'y': 0.79,
+        'highlight': (0, 71, 255), 'highlight_text': (255, 255, 255), 'music_db': -22,
+    },
+}
 
 
 def engine_style(name):
@@ -143,6 +160,9 @@ def studio():
     if root not in sys.path:
         sys.path.insert(0, root)
     from connectors import finish as f, styles as s  # noqa: E402  (read-only import)
+    # Register template looks in memory only; never write to engine files.
+    for name, look in TEMPLATE_LOOKS.items():
+        s.STYLES.setdefault(name, dict(look))
     return f, s
 
 
