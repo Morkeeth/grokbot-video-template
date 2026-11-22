@@ -61,13 +61,14 @@ cd grokbot-video-template
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt            # mcp below 2, pillow
-git clone https://github.com/Morkeeth/hermes-studio   # the Video Studio engine; tested at commit dc4a981
-export STUDIO_PATH=$PWD/hermes-studio
+git clone https://github.com/Morkeeth/hermes-studio
+git -C hermes-studio checkout --detach dc4a9817c6049c95d4ad789535892b1858714d6a
+export STUDIO_PATH="$PWD/hermes-studio"
 python3 -m unittest discover -s tests
 python3 demo/run_demo.py /tmp/studio-demo
 ```
 
-The tests take about two minutes and print nothing until they finish. A good run ends with `OK` and no `skipped`. If you see `OK (skipped=13)`, `STUDIO_PATH` is not set, so the engine tests did not run.
+The suite includes FFmpeg renders, so runtime depends on your machine and FFmpeg build. Add `-v` to the unittest command to see individual tests as they run. A complete run ends with `OK` and zero skips. If engine tests are skipped, set `STUDIO_PATH` to the engine checkout and rerun.
 
 The demo prints a JSON report. The last step names the finished `final.mp4`. Open it to check that it plays.
 
